@@ -2,6 +2,8 @@ from transformers import AutoModelForSequenceClassification, RobertaTokenizer
 from torch.nn.functional import softmax
 import pandas as pd
 
+#Last version before merging into multimodal
+
 # DataFrame을 초기화합니다.
 df = pd.DataFrame(columns=['input', 'probability'])
 

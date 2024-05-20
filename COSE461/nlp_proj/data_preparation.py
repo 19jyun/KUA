@@ -7,6 +7,8 @@ from datasets import load_dataset
 from transformers import RobertaTokenizer
 import warnings
 
+#Last version before merging into multimodal
+
 warnings.filterwarnings("ignore", category=FutureWarning)
 
 def load_data(file_path):

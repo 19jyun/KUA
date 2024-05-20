@@ -4,6 +4,8 @@ import pycuda.autoinit  # Automatically initializes CUDA
 from pycuda.driver import Device
 import torch
 
+#Last version before merging into multimodal
+
 print("is torch cuda available ", torch.cuda.is_available())
 def checkforGPU():
     # Get Id of default device

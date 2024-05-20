@@ -11,6 +11,8 @@ from sklearn.metrics import accuracy_score
 import numpy as np
 import re
 
+#Last version before merging into multimodal
+
 # Initialize logger
 logging.getLogger("transformers.tokenization_utils_base").setLevel(logging.WARNING)
 logging.disable(logging.WARNING)

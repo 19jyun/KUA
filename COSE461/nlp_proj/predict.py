@@ -2,6 +2,8 @@ from transformers import RobertaTokenizer
 from model import get_model
 import torch
 
+#Last version before merging into multimodal
+
 def make_prediction(texts):
     tokenizer = RobertaTokenizer.from_pretrained('roberta-base')
     model = get_model()
