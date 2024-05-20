@@ -2,8 +2,6 @@ import subprocess
 import webbrowser
 import time
 
-#Last version before merging into multimodal
-
 def launch_tensorboard():
     try:
         # TensorBoard를 실행합니다.

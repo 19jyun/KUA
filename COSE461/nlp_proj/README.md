@@ -107,5 +107,3 @@ Trained on:
 
 changed my idea, planning on giving two inputs at the same time (one image, one text)
 the image will serve as a context 
-
-#Last version before merging into multimodal
