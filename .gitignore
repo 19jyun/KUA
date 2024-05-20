@@ -1,0 +1,26 @@
+# Ignore everything in the root directory
+/*
+
+# Do not ignore the .gitignore file itself
+!.gitignore
+
+# Do not ignore the COSE461 directory
+!/COSE461/
+
+# Ignore everything inside the COSE461 directory
+/COSE461/*
+
+# But do not ignore Python files in the COSE461/nlp_proj directory
+!/COSE461/nlp_proj/
+!/COSE461/nlp_proj/*.py
+!/COSE461/nlp_proj/*.md
+
+# Ignore specific directories and files within COSE461/nlp_proj
+/COSE461/nlp_proj/__pycache__/
+/COSE461/nlp_proj/datasets/
+/COSE461/nlp_proj/logs/
+/COSE461/nlp_proj/results/
+/COSE461/nlp_proj/test_datasets/
+/COSE461/nlp_proj/trained_model/
+/COSE461/nlp_proj/*.csv
+/COSE461/nlp_proj/*.zip
