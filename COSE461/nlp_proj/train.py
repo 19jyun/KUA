@@ -7,7 +7,7 @@ import warnings
 from transformers import Trainer, TrainingArguments, RobertaTokenizer, AutoModelForSequenceClassification, default_data_collator, EarlyStoppingCallback
 from sklearn.model_selection import train_test_split
 from torch.utils.data import Dataset
-from sklearn.metrics import accuracy_score
+from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score
 import numpy as np
 import re
 
@@ -42,9 +42,8 @@ class SarcasmDataset(Dataset):
             add_special_tokens=True,
             max_length=self.max_len,
             padding='max_length',
-            truncation='longest_first',
-            return_tensors='pt',
-            return_overflowing_tokens=False  # Ensure no overflowing tokens are returned
+            truncation=True,
+            return_tensors='pt'
         )
 
         # Remove batch dimension
@@ -55,6 +54,18 @@ class SarcasmDataset(Dataset):
 def load_data(file_path):
     df = pd.read_csv(file_path)
     return df
+
+def load_data_with_context(file_path):
+    df = pd.read_csv(file_path)
+    if 'context' in df.columns:
+        texts = df['text'].tolist()
+        contexts = df['context'].tolist()
+        labels = df['label'].tolist()
+        return texts, contexts, labels
+    else:
+        texts = df['text'].tolist()
+        labels = df['label'].tolist()
+        return texts, None, labels
 
 def get_latest_trained_model_path():
     # Read the status file to get the last trained dataset
@@ -68,7 +79,16 @@ def get_latest_trained_model_path():
             return model_path
     return None
 
-def train_model(tokenizer, model, train_dataset, eval_dataset, dataset_name, num_epochs=5, batch_size=16):  # Increased epochs
+def compute_class_weights(labels):
+    class_counts = np.bincount(labels)
+    total_samples = len(labels)
+    class_weights = [total_samples / (2 * count) for count in class_counts]
+    return torch.tensor(class_weights, dtype=torch.float)
+
+def train_model(tokenizer, model, train_dataset, eval_dataset, model_save_name, dataset_name, num_epochs=5, batch_size=16):  # Increased epochs
+    class_weights = compute_class_weights(train_dataset.labels)
+    loss_fn = torch.nn.CrossEntropyLoss(weight=class_weights.to('cuda'))
+
     training_args = TrainingArguments(
         output_dir=f'./results/{dataset_name}',
         num_train_epochs=num_epochs,
@@ -89,11 +109,14 @@ def train_model(tokenizer, model, train_dataset, eval_dataset, dataset_name, num
         eval_dataset=eval_dataset,
         compute_metrics=compute_metrics,
         data_collator=default_data_collator,  # Ensure consistent tensor sizes in the batch
-        callbacks=[EarlyStoppingCallback(early_stopping_patience=3)]  # Added early stopping callback
+        callbacks=[EarlyStoppingCallback(early_stopping_patience=3)],  # Added early stopping callback
+        #criterion=loss_fn  # Use the custom loss function with class weights
     )
     trainer.train()
-    model.save_pretrained(f"trained_model/{dataset_name}")
-    with open(f"trained_model/{dataset_name}_trained", 'w') as f:
+    
+    # Save the trained model with the user-provided name
+    model.save_pretrained(f"trained_model/{model_save_name}")
+    with open(f"trained_model/{model_save_name}_trained", 'w') as f:
         f.write('This dataset has been trained.')
 
 def clear_stale_marker_files():
@@ -106,34 +129,37 @@ def clear_stale_marker_files():
 def natural_sort_key(s, _nsre=re.compile('([0-9]+)')):
     return [int(text) if text.isdigit() else text.lower() for text in re.split(_nsre, s)]
 
-def get_next_dataset_to_train():
-    # Read the status file
-    status_file = 'trained_model/train_status.txt'
-    last_trained = None
-    if os.path.exists(status_file):
-        with open(status_file, 'r') as f:
-            last_trained = f.read().strip()
+def select_model():
+    models_directory = 'trained_model'
+    model_files = [f for f in os.listdir(models_directory) if os.path.isdir(os.path.join(models_directory, f))]
 
+    # Display the list of trained models
+    for i, model_file in enumerate(model_files):
+        print(f"{i+1}. {model_file}")
+
+    # Get user input
+    model_number = int(input("Enter the number of the model you want to load (or 0 for roberta-based model): "))
+
+    if model_number == 0:
+        return 'roberta-base', 'roberta-base'
+    else:
+        selected_model_file = model_files[model_number - 1]
+        return selected_model_file, os.path.join(models_directory, selected_model_file)
+
+def select_dataset():
     # Get all dataset files in sorted order
     dataset_files = sorted(glob.glob('datasets/*.csv'), key=natural_sort_key)
 
-    # Check for next dataset to train
-    found_last_trained = False
-    for filename in dataset_files:
-        dataset_name = os.path.basename(filename).split('.')[0]
-        if found_last_trained:
-            marker_path = f"trained_model/{dataset_name}_trained"
-            if not os.path.exists(marker_path):
-                return filename, dataset_name
-        if dataset_name == last_trained:
-            found_last_trained = True
+    # Display the list of datasets
+    for i, dataset_file in enumerate(dataset_files):
+        print(f"{i+1}. {dataset_file}")
 
-    # If last_trained is None, return the first dataset
-    if last_trained is None and dataset_files:
-        first_dataset = dataset_files[0]
-        return first_dataset, os.path.basename(first_dataset).split('.')[0]
+    # Get user input
+    dataset_number = int(input("Enter the number of the dataset you want to train: "))
+    selected_dataset_file = dataset_files[dataset_number - 1]
+    dataset_name = os.path.basename(selected_dataset_file).split('.')[0]
 
-    return None, None
+    return selected_dataset_file, dataset_name
 
 def update_status_file(dataset_name):
     with open('trained_model/train_status.txt', 'w') as f:
@@ -143,52 +169,53 @@ def compute_metrics(eval_pred):
     predictions, labels = eval_pred
     preds = np.argmax(predictions, axis=1)
     acc = accuracy_score(labels, preds)
-    return {'accuracy': acc}
+    precision = precision_score(labels, preds, zero_division=1)
+    recall = recall_score(labels, preds, zero_division=1)
+    f1 = f1_score(labels, preds, zero_division=1)
+    return {'accuracy': acc, 'precision': precision, 'recall': recall, 'f1': f1}
 
 def main():
     tokenizer = RobertaTokenizer.from_pretrained('roberta-base')
     
-    # Get the next dataset to train
-    next_dataset, dataset_name = get_next_dataset_to_train()
-    if not next_dataset:
-        print("All datasets have been trained.")
-        return
+    # Allow user to select the model and dataset
+    model_name, model_path = select_model()
+    next_dataset, dataset_name = select_dataset()
 
-    # Load the most recently trained model or a base model
-    latest_model_path = get_latest_trained_model_path()
-    if (latest_model_path is not None) and os.path.exists(latest_model_path):
-        model = AutoModelForSequenceClassification.from_pretrained(latest_model_path)
+    # Load the selected model or a base model
+    if model_path == 'roberta-base':
+        model = AutoModelForSequenceClassification.from_pretrained(model_path, num_labels=2)
     else:
-        model = AutoModelForSequenceClassification.from_pretrained('roberta-base', num_labels=2)
+        model = AutoModelForSequenceClassification.from_pretrained(model_path)
 
     # Clear any stale marker files
     clear_stale_marker_files()
 
     print(f"Processing dataset: {next_dataset}")
-    print(f"Training model: {latest_model_path if latest_model_path else 'roberta-base'}")
+    print(f"Training model: {model_path if model_path else 'roberta-base'}")
 
-    df = load_data(next_dataset)
-    train_df, eval_df = train_test_split(df, test_size=0.2)
+    texts, contexts, labels = load_data_with_context(next_dataset)
+    
+    # Debugging: print out a few examples
+    for idx in range(5):
+        print(f"Text: {texts[idx]}")
+        if contexts:
+            print(f"Context: {contexts[idx]}")
+        print(f"Label: {labels[idx]}")
+        print("Tokenized Input: ", tokenizer(texts[idx], text_pair=contexts[idx] if contexts else None))
+        print("\n")
 
-    contexts = train_df['context'].to_numpy() if 'context' in train_df.columns else None
-    train_dataset = SarcasmDataset(
-        train_df['text'].to_numpy(), 
-        train_df['label'].to_numpy(), 
-        tokenizer, 
-        max_len=128,  # Use 128 to match previous training settings
-        contexts=contexts
-    )
+    train_texts, eval_texts, train_labels, eval_labels = train_test_split(texts, labels, test_size=0.2, stratify=labels)
+    train_contexts, eval_contexts = None, None
+    if contexts is not None:
+        train_contexts, eval_contexts = train_test_split(contexts, test_size=0.2, stratify=labels)
 
-    contexts = eval_df['context'].to_numpy() if 'context' in eval_df.columns else None
-    eval_dataset = SarcasmDataset(
-        eval_df['text'].to_numpy(), 
-        eval_df['label'].to_numpy(), 
-        tokenizer, 
-        max_len=128,  # Use 128 to match previous training settings
-        contexts=contexts
-    )
+    train_dataset = SarcasmDataset(train_texts, train_labels, tokenizer, max_len=128, contexts=train_contexts)
+    eval_dataset = SarcasmDataset(eval_texts, eval_labels, tokenizer, max_len=128, contexts=eval_contexts)
 
-    train_model(tokenizer, model, train_dataset, eval_dataset, dataset_name)
+    # Ask user for the model save name
+    model_save_name = input("Enter the name to save the trained model: ")
+    
+    train_model(tokenizer, model, train_dataset, eval_dataset, model_save_name, dataset_name)
 
     # Update the status file
     update_status_file(dataset_name)
