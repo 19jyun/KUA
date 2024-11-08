@@ -5,10 +5,15 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Home</title>
+    <link rel="stylesheet" href="style.css">
 </head>
 
 <body>
     <h1>Welcome to the Train Ticket Service</h1>
+
+    <audio id="backgroundMusic" src="audio/background_music.mp3" loop></audio>
+    <button onclick="toggleMusic()" id="musicControl">Play Music</button>
+
     <p id="greeting"></p>
     <button onclick="logout()">Logout</button>
 
@@ -38,6 +43,26 @@
 
         // Fetch user info on page load
         document.addEventListener('DOMContentLoaded', fetchUserInfo);
+
+
+        const music = document.getElementById('backgroundMusic');
+            const musicControl = document.getElementById('musicControl');
+
+            function toggleMusic() {
+                if (music.paused) {
+                    music.play();
+                    musicControl.textContent = 'Pause Music';
+                } else {
+                    music.pause();
+                    musicControl.textContent = 'Play Music';
+                }
+            }
+
+            // Optional: Auto-start music on page load (muted initially)
+            document.addEventListener('DOMContentLoaded', () => {
+                music.volume = 0.2; // Set volume (20% initially)
+            });
+
     </script>
 </body>
 
