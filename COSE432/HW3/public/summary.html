@@ -21,16 +21,13 @@
     <button onclick="cancelReservation()">Cancel</button>
 
     <script>
-        // Load the reservation data from sessionStorage
         const reservationData = JSON.parse(sessionStorage.getItem('reservationData'));
 
-        // Populate the summary fields
         document.getElementById('summaryDate').textContent = reservationData.date;
         document.getElementById('summaryTime').textContent = reservationData.time;
         document.getElementById('summaryTrainNo').textContent = reservationData.trainNo;
         document.getElementById('summaryDestination').textContent = reservationData.destination;
 
-        // Confirm Reservation: Sends the reservation data to the server and redirects to my_reservation.html
         function confirmReservation() {
             fetch('/reservations', {
                 method: 'POST',
@@ -45,13 +42,11 @@
                 .catch(error => console.error('Error confirming reservation:', error));
         }
 
-        // Change Reservation: Redirect back to reservation.html with current reservation details
         function changeReservation() {
             sessionStorage.setItem('reservationData', JSON.stringify(reservationData));
             window.location.href = 'reservation.html';
         }
 
-        // Cancel Reservation: Redirect back to main page (index.html) and clear the stored reservation data
         function cancelReservation() {
             sessionStorage.removeItem('reservationData');
             window.location.href = 'index.html';

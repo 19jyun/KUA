@@ -1,4 +1,3 @@
-// Load and display reservations on the "My Reservations" page
 document.addEventListener('DOMContentLoaded', () => {
     const tableBody = document.getElementById('reservationsTable')?.querySelector('tbody');
     
@@ -12,7 +11,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 });
 
-// Function to fetch reservations from the server and populate the table
 function fetchReservations() {
     const tableBody = document.getElementById('reservationsTable')?.querySelector('tbody');
     
@@ -21,32 +19,28 @@ function fetchReservations() {
     fetch('/reservations')
         .then(response => response.json())
         .then(data => {
-            tableBody.innerHTML = ''; // Clear any existing rows
+            tableBody.innerHTML = ''; 
             
             data.forEach(reservation => {
                 const row = tableBody.insertRow();
                 
-                // Populate each cell in the row with reservation data
                 row.insertCell().textContent = reservation.date;
                 row.insertCell().textContent = reservation.time;
                 row.insertCell().textContent = reservation.trainNo;
                 row.insertCell().textContent = reservation.destination;
 
-                // Add a delete button for each reservation
                 const deleteButton = document.createElement('button');
                 deleteButton.textContent = 'Delete';
-                deleteButton.onclick = () => deleteReservation(reservation.id); // Use ID for deletion
+                deleteButton.onclick = () => deleteReservation(reservation.id);
                 row.insertCell().appendChild(deleteButton);
             });
         })
         .catch(error => console.error('Error loading reservations:', error));
 }
 
-// Handle submission of a new reservation in "reservation.html"
 function handleReservationSubmit(event) {
     event.preventDefault();
     
-    // Get form data
     const formData = new FormData(event.target);
     const reservation = {
         date: formData.get('date'),
@@ -55,7 +49,6 @@ function handleReservationSubmit(event) {
         destination: formData.get('destination')
     };
     
-    // Send POST request to add new reservation
     fetch('/reservations', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -64,12 +57,11 @@ function handleReservationSubmit(event) {
     .then(response => response.json())
     .then(data => {
         alert(data.message);
-        event.target.reset(); // Clear the form after submission
+        event.target.reset();
     })
     .catch(error => console.error('Error adding reservation:', error));
 }
 
-// Function to delete a reservation by ID
 async function deleteReservation(id) {
     try {
         const response = await fetch(`/reservations/${id}`, {
@@ -80,7 +72,7 @@ async function deleteReservation(id) {
 
         if (response.ok) {
             alert(data.message);
-            fetchReservations(); // Refresh the table after deletion
+            fetchReservations(); 
         } else {
             alert(`Error: ${data.message}`);
         }
@@ -90,7 +82,6 @@ async function deleteReservation(id) {
     }
 }
 
-// Function to go back to the main menu (if needed in other HTML files)
 function goBack() {
     window.location.href = 'index.html';
 }

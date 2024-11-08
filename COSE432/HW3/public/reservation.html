@@ -28,7 +28,6 @@
     <button onclick="goBack()">Return to Main Menu</button>
 
     <script>
-        // Check if there is existing reservation data in sessionStorage and pre-fill the form if available
         document.addEventListener('DOMContentLoaded', () => {
             const savedReservation = JSON.parse(sessionStorage.getItem('reservationData'));
 
@@ -42,7 +41,6 @@
             }
         });
 
-        // Handle form submission and redirect to summary.html with reservation data
         document.getElementById('reservationForm').addEventListener('submit', (event) => {
             event.preventDefault();
 
@@ -54,7 +52,6 @@
                 destination: formData.get('destination')
             };
 
-            // Store the reservation data in sessionStorage to access it in summary.html
             sessionStorage.setItem('reservationData', JSON.stringify(reservationData));
             window.location.href = 'summary.html';
         });

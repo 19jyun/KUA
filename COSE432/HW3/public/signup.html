@@ -24,7 +24,6 @@
     <a href="login.html">Already have an account? Log in here</a>
 
     <script>
-        // Function to check if the userID is available
         async function checkUserID() {
             const userIDInput = document.getElementById('userID');
             const signUpButton = document.getElementById('signUpButton');
@@ -36,16 +35,15 @@
             if (response.ok) {
                 // If user ID is available
                 alert(`User ID "${userID}" is available!`);
-                userIDInput.disabled = true; // Lock the User ID input
-                signUpButton.disabled = false; // Enable the Sign Up button
+                userIDInput.disabled = true; 
+                signUpButton.disabled = false;
             } else {
                 // If user ID is already taken
                 alert(`User ID "${userID}" is already taken.`);
-                signUpButton.disabled = true; // Keep the Sign Up button disabled
+                signUpButton.disabled = true;
             }
         }
 
-        // Handle signup form submission
         document.getElementById('signupForm').addEventListener('submit', async (event) => {
             event.preventDefault();
             const userID = document.getElementById('userID').value;
@@ -59,7 +57,6 @@
 
             const data = await response.json();
 
-            // Show success or error message as a popup
             if (response.ok) {
                 alert('Signup successful! Redirecting to login page.');
                 window.location.href = 'login.html';

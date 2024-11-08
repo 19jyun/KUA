@@ -1,20 +1,15 @@
-/* style.css */
 
 body {
     background-image: url('images/background_image.png');
-    /* Path to your image */
     background-size: cover;
     background-position: center;
     background-attachment: fixed;
-    /* Keeps the image in place during scrolling */
     color: #fff;
-    /* Adjust text color for readability, if needed */
     font-family: Arial, sans-serif;
     margin: 0;
     padding: 0;
 }
 
-/* Optional overlay for better readability */
 body::before {
     content: '';
     position: fixed;
@@ -29,19 +24,16 @@ body::before {
 
 button {
     color: black;
-    /* Optionally, customize the background and border to make text stand out */
     background-color: white;
     border: 1px solid black;
     padding: 10px 20px;
     cursor: pointer;
 }
 
-/* Adjustments for text and elements readability */
 h1,
 h2,
 h3,
 p,
 label{
     color: #fff;
-    /* Ensures text stands out */
 }

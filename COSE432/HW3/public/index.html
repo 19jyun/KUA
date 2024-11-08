@@ -23,25 +23,21 @@
     </nav>
 
     <script>
-        // Fetch user information and update greeting
         async function fetchUserInfo() {
             const response = await fetch('/user-info');
             if (response.ok) {
                 const data = await response.json();
                 document.getElementById('greeting').textContent = `Hello, ${data.userID}!`;
             } else {
-                // Redirect to login if not authenticated
                 window.location.href = 'login.html';
             }
         }
 
-        // Logout function
         async function logout() {
             await fetch('/logout', { method: 'POST' });
             window.location.href = 'login.html';
         }
 
-        // Fetch user info on page load
         document.addEventListener('DOMContentLoaded', fetchUserInfo);
 
 
@@ -58,9 +54,8 @@
                 }
             }
 
-            // Optional: Auto-start music on page load (muted initially)
             document.addEventListener('DOMContentLoaded', () => {
-                music.volume = 0.2; // Set volume (20% initially)
+                music.volume = 0.2; 
             });
 
     </script>
