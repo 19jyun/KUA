@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Reservation</title>
+    <title>Make a Reservation</title>
     <link rel="stylesheet" href="style.css">
 </head>
 
@@ -23,10 +23,46 @@
         <label for="destination">Destination:</label>
         <input type="text" id="destination" name="destination" required><br>
 
-        <button type="submit">Submit Reservation</button>
+        <button type="submit">Proceed to Summary</button>
     </form>
-    <a href="index.html"><button>Return to Main Menu</button></a>
-    <script src="script.js"></script>
+    <button onclick="goBack()">Return to Main Menu</button>
+
+    <script>
+        // Check if there is existing reservation data in sessionStorage and pre-fill the form if available
+        document.addEventListener('DOMContentLoaded', () => {
+            const savedReservation = JSON.parse(sessionStorage.getItem('reservationData'));
+
+            if (savedReservation) {
+                document.getElementById('date').value = savedReservation.date;
+                document.getElementById('time').value = savedReservation.time;
+                document.getElementById('trainNo').value = savedReservation.trainNo;
+                document.getElementById('destination').value = savedReservation.destination;
+
+                sessionStorage.removeItem('reservationData');
+            }
+        });
+
+        // Handle form submission and redirect to summary.html with reservation data
+        document.getElementById('reservationForm').addEventListener('submit', (event) => {
+            event.preventDefault();
+
+            const formData = new FormData(event.target);
+            const reservationData = {
+                date: formData.get('date'),
+                time: formData.get('time'),
+                trainNo: formData.get('trainNo'),
+                destination: formData.get('destination')
+            };
+
+            // Store the reservation data in sessionStorage to access it in summary.html
+            sessionStorage.setItem('reservationData', JSON.stringify(reservationData));
+            window.location.href = 'summary.html';
+        });
+
+        function goBack() {
+            window.location.href = 'index.html';
+        }
+    </script>
 </body>
 
 </html>

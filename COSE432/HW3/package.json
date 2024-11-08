@@ -10,6 +10,7 @@
   "license": "ISC",
   "description": "",
   "dependencies": {
+    "bcryptjs": "^2.4.3",
     "csv-writer": "^1.6.0",
     "uuid": "^11.0.2"
   }

@@ -1,34 +1,138 @@
 const express = require('express');
 const fs = require('fs');
 const path = require('path');
-const { v4: uuidv4 } = require('uuid'); // Importing UUID for unique IDs
+const bcrypt = require('bcryptjs');
+const session = require('express-session');
+const { v4: uuidv4 } = require('uuid');
 const app = express();
 const PORT = 3000;
 
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
 
-// Helper function to ensure `reservations.csv` exists with the correct headers
-function ensureCSVFileExists() {
+// Initialize sessions
+app.use(session({
+    secret: 'your_secret_key',
+    resave: false,
+    saveUninitialized: true,
+    cookie: { secure: false } // Set secure: true in production (with HTTPS)
+}));
+
+function ensureSignupFileExists() {
+    const filePath = path.join(__dirname, 'signup_info.csv');
+    if (!fs.existsSync(filePath)) {
+        fs.writeFileSync(filePath, 'userID,hashedPassword\n');
+        console.log('Created signup_info.csv with headers');
+    }
+}
+
+function ensureReservationsFileExists() {
     const filePath = path.join(__dirname, 'reservations.csv');
     if (!fs.existsSync(filePath)) {
-        // Create the file with headers if it doesn't exist
-        fs.writeFileSync(filePath, 'id,year,month,day,time,trainNo,destination\n');
+        fs.writeFileSync(filePath, 'id,userID,year,month,day,time,trainNo,destination\n');
         console.log('Created reservations.csv with headers');
     }
 }
 
-ensureCSVFileExists();
+// Call helper functions at startup to ensure files exist
+ensureSignupFileExists();
+ensureReservationsFileExists();
 
-// Helper function to convert numeric month to abbreviated month name
+// Helper function to get month abbreviation
 function getMonthAbbreviation(month) {
     const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
     return months[parseInt(month, 10) - 1];
 }
 
-// Endpoint to add a new reservation with a unique ID
-app.post('/reservations', (req, res) => {
+// Middleware to check if user is authenticated
+function isAuthenticated(req, res, next) {
+    if (req.session.userID) {
+        return next();
+    }
+    res.status(401).json({ message: 'Unauthorized' });
+}
+
+// Endpoint to get the logged-in user's info
+app.get('/user-info', isAuthenticated, (req, res) => {
+    res.json({ userID: req.session.userID });
+});
+
+// Signup endpoint
+app.post('/signup', async (req, res) => {
+    const { userID, password } = req.body;
+    ensureSignupFileExists(); // Ensure the signup file exists
+
+    // Check if userID already exists
+    const data = fs.readFileSync('signup_info.csv', 'utf8');
+    const users = data.trim().split('\n').slice(1).map(line => line.split(',')[0]);
+    if (users.includes(userID)) {
+        return res.status(400).json({ message: 'UserID already exists' });
+    }
+
+    // Hash the password
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    // Append the new user to signup_info.csv
+    const newUser = `\n${userID},${hashedPassword}`;
+    fs.appendFileSync('signup_info.csv', newUser);
+    res.json({ message: 'Signup successful' });
+});
+
+// Login endpoint
+app.post('/login', async (req, res) => {
+    const { userID, password } = req.body;
+    ensureSignupFileExists(); // Ensure the signup file exists
+
+    const data = fs.readFileSync('signup_info.csv', 'utf8');
+    const user = data.trim().split('\n').slice(1).find(line => line.split(',')[0] === userID);
+
+    if (!user) {
+        return res.status(400).json({ message: 'Invalid credentials' });
+    }
+
+    const [storedUserID, storedHashedPassword] = user.split(',');
+
+    // Verify password
+    const isMatch = await bcrypt.compare(password, storedHashedPassword);
+    if (!isMatch) {
+        return res.status(400).json({ message: 'Invalid credentials' });
+    }
+
+    // Start session
+    req.session.userID = userID;
+    res.json({ message: `Login successful! Welcome, ${userID}` });
+});
+
+// Logout endpoint
+app.post('/logout', (req, res) => {
+    req.session.destroy((err) => {
+        if (err) {
+            return res.status(500).json({ message: 'Error logging out' });
+        }
+        res.json({ message: 'Logout successful' });
+    });
+});
+
+// Check if userID is available (for signup)
+app.get('/check-userid/:userID', (req, res) => {
+    const userIDToCheck = req.params.userID;
+    ensureSignupFileExists(); // Ensure the signup file exists
+
+    const data = fs.readFileSync('signup_info.csv', 'utf8');
+    const users = data.trim().split('\n').slice(1).map(line => line.split(',')[0]);
+    if (users.includes(userIDToCheck)) {
+        return res.status(400).json({ message: 'UserID is taken' });
+    }
+
+    res.json({ message: 'UserID is available' });
+});
+
+// Endpoint to add a new reservation (protected by isAuthenticated middleware)
+app.post('/reservations', isAuthenticated, (req, res) => {
+    ensureReservationsFileExists(); // Ensure the reservations file exists
+
     const { date, time, trainNo, destination } = req.body;
+    const userID = req.session.userID; // Get the logged-in user's ID
 
     if (!date || !time || !trainNo || !destination) {
         return res.status(400).json({ message: 'Missing required reservation data' });
@@ -38,48 +142,32 @@ app.post('/reservations', (req, res) => {
     const monthAbbreviation = getMonthAbbreviation(month);
     const newId = uuidv4(); // Generate a unique ID for the reservation
 
-    // Format the new reservation with the ID and the month abbreviation
-    const newReservation = `\n${newId}, ${year}, ${monthAbbreviation}, ${day}, ${time}, ${trainNo}, ${destination}`;
-    
-    // Append the new reservation to reservations.csv
-    fs.appendFile('reservations.csv', newReservation, (err) => {
-        if (err) {
-            console.error('Error saving reservation:', err);
-            return res.status(500).json({ message: 'Error saving reservation' });
-        }
-        res.json({ message: 'Reservation added successfully', id: newId });
-    });
+    // Format the new reservation with the userID
+    const newReservation = `\n${newId},${userID},${year},${monthAbbreviation},${day},${time},${trainNo},${destination}`;
+    fs.appendFileSync('reservations.csv', newReservation);
+    res.json({ message: 'Reservation added successfully', id: newId });
 });
 
-// Endpoint to get all reservations from the CSV file
-app.get('/reservations', (req, res) => {
-    fs.readFile('reservations.csv', 'utf8', (err, data) => {
-        if (err) {
-            console.error('Error reading reservations file:', err);
-            return res.status(500).json({ message: 'Error reading reservations file' });
-        }
+// Endpoint to get reservations for the logged-in user
+app.get('/reservations', isAuthenticated, (req, res) => {
+    ensureReservationsFileExists(); // Ensure the reservations file exists
 
-        // Split the CSV file into rows and parse each row into an object
-        const rows = data.trim().split('\n');
-        const header = rows[0];
-        const dataRows = rows.slice(1);
+    const userID = req.session.userID; // Get the logged-in user's ID
+    const data = fs.readFileSync('reservations.csv', 'utf8');
 
-        const reservations = dataRows.map(line => {
-            const [id, year, month, day, time, trainNo, destination] = line.split(',').map(item => item.trim());
-            return {
-                id,
-                date: `${year}-${month}-${day}`,
-                time,
-                trainNo,
-                destination
-            };
-        });
+    const rows = data.trim().split('\n').slice(1);
+    const reservations = rows
+        .map(line => {
+            const [id, storedUserID, year, month, day, time, trainNo, destination] = line.split(',').map(item => item.trim());
+            if (storedUserID === userID) {
+                return { id, date: `${year}-${month}-${day}`, time, trainNo, destination };
+            }
+        })
+        .filter(Boolean);
 
-        res.json(reservations);
-    });
+    res.json(reservations);
 });
 
-// Endpoint to delete a specific reservation by ID
 app.delete('/reservations/:id', (req, res) => {
     const idToDelete = req.params.id;
 

@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sign Up</title>
+</head>
+
+<body>
+    <h1>Sign Up</h1>
+    <form id="signupForm">
+        <label for="userID">User ID:</label>
+        <input type="text" id="userID" name="userID" required>
+        <button type="button" onclick="checkUserID()">Check Availability</button><br>
+
+        <label for="password">Password:</label>
+        <input type="password" id="password" name="password" required><br>
+
+        <button type="submit" id="signUpButton" disabled>Sign Up</button>
+    </form>
+
+    <a href="login.html">Already have an account? Log in here</a>
+
+    <script>
+        // Function to check if the userID is available
+        async function checkUserID() {
+            const userIDInput = document.getElementById('userID');
+            const signUpButton = document.getElementById('signUpButton');
+            const userID = userIDInput.value;
+
+            const response = await fetch(`/check-userid/${userID}`);
+            const data = await response.json();
+
+            if (response.ok) {
+                // If user ID is available
+                alert(`User ID "${userID}" is available!`);
+                userIDInput.disabled = true; // Lock the User ID input
+                signUpButton.disabled = false; // Enable the Sign Up button
+            } else {
+                // If user ID is already taken
+                alert(`User ID "${userID}" is already taken.`);
+                signUpButton.disabled = true; // Keep the Sign Up button disabled
+            }
+        }
+
+        // Handle signup form submission
+        document.getElementById('signupForm').addEventListener('submit', async (event) => {
+            event.preventDefault();
+            const userID = document.getElementById('userID').value;
+            const password = document.getElementById('password').value;
+
+            const response = await fetch('/signup', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ userID, password })
+            });
+
+            const data = await response.json();
+
+            // Show success or error message as a popup
+            if (response.ok) {
+                alert('Signup successful! Redirecting to login page.');
+                window.location.href = 'login.html';
+            } else {
+                alert(data.message);
+            }
+        });
+    </script>
+</body>
+
+</html>

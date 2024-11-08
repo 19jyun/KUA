@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login</title>
+</head>
+
+<body>
+    <h1>Login</h1>
+    <form id="loginForm">
+        <label for="userID">User ID:</label>
+        <input type="text" id="userID" name="userID" required><br>
+
+        <label for="password">Password:</label>
+        <input type="password" id="password" name="password" required><br>
+
+        <button type="submit">Login</button>
+    </form>
+
+    <div id="message" style="color: red;"></div> <!-- Message area -->
+
+    <a href="signup.html">Don't have an account? Sign up here</a>
+
+    <script>
+        document.getElementById('loginForm').addEventListener('submit', async (event) => {
+            event.preventDefault();
+            const userID = document.getElementById('userID').value;
+            const password = document.getElementById('password').value;
+
+            const response = await fetch('/login', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ userID, password })
+            });
+
+            const data = await response.json();
+
+            if (response.ok) {
+                alert('Login successful! Redirecting to home page.');
+                window.location.href = 'index.html';
+            } else {
+                alert(data.message);
+            }
+        });
+    </script>
+</body>
+
+</html>

@@ -13,7 +13,11 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 // Function to fetch reservations from the server and populate the table
-function fetchReservations(tableBody) {
+function fetchReservations() {
+    const tableBody = document.getElementById('reservationsTable')?.querySelector('tbody');
+    
+    if (!tableBody) return;
+
     fetch('/reservations')
         .then(response => response.json())
         .then(data => {
@@ -66,17 +70,24 @@ function handleReservationSubmit(event) {
 }
 
 // Function to delete a reservation by ID
-function deleteReservation(id) {
-    fetch(`/reservations/${id}`, {
-        method: 'DELETE'
-    })
-    .then(response => response.json())
-    .then(data => {
-        alert(data.message);
-        const tableBody = document.getElementById('reservationsTable').querySelector('tbody');
-        fetchReservations(tableBody); // Refresh the table after deletion
-    })
-    .catch(error => console.error('Error deleting reservation:', error));
+async function deleteReservation(id) {
+    try {
+        const response = await fetch(`/reservations/${id}`, {
+            method: 'DELETE'
+        });
+
+        const data = await response.json();
+
+        if (response.ok) {
+            alert(data.message);
+            fetchReservations(); // Refresh the table after deletion
+        } else {
+            alert(`Error: ${data.message}`);
+        }
+    } catch (error) {
+        console.error('Error deleting reservation:', error);
+        alert('Failed to delete reservation.');
+    }
 }
 
 // Function to go back to the main menu (if needed in other HTML files)

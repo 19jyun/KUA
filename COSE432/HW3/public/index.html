@@ -4,17 +4,41 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Ticket Reservation Service</title>
-    <link rel="stylesheet" href="style.css">
+    <title>Home</title>
 </head>
 
 <body>
-    <h1>KU Train Ticket Service</h1>
+    <h1>Welcome to the Train Ticket Service</h1>
+    <p id="greeting"></p>
+    <button onclick="logout()">Logout</button>
+
     <nav>
-        <a href="reservation.html"><button>Make a reservation</button></a>
-        <a href="my_reservation.html"><button>My reservations</button></a>
+        <a href="reservation.html"><button>Make a Reservation</button></a>
+        <a href="my_reservation.html"><button>View My Reservations</button></a>
     </nav>
-    <script src="script.js"></script>
+
+    <script>
+        // Fetch user information and update greeting
+        async function fetchUserInfo() {
+            const response = await fetch('/user-info');
+            if (response.ok) {
+                const data = await response.json();
+                document.getElementById('greeting').textContent = `Hello, ${data.userID}!`;
+            } else {
+                // Redirect to login if not authenticated
+                window.location.href = 'login.html';
+            }
+        }
+
+        // Logout function
+        async function logout() {
+            await fetch('/logout', { method: 'POST' });
+            window.location.href = 'login.html';
+        }
+
+        // Fetch user info on page load
+        document.addEventListener('DOMContentLoaded', fetchUserInfo);
+    </script>
 </body>
 
 </html>

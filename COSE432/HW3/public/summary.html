@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reservation Summary</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+    <h1>Reservation Summary</h1>
+    <div id="reservationSummary">
+        <p><strong>Date:</strong> <span id="summaryDate"></span></p>
+        <p><strong>Time:</strong> <span id="summaryTime"></span></p>
+        <p><strong>Train No.:</strong> <span id="summaryTrainNo"></span></p>
+        <p><strong>Destination:</strong> <span id="summaryDestination"></span></p>
+    </div>
+    <button onclick="confirmReservation()">Confirm Reservation</button>
+    <button onclick="changeReservation()">Change Reservation</button>
+    <button onclick="cancelReservation()">Cancel</button>
+
+    <script>
+        // Load the reservation data from sessionStorage
+        const reservationData = JSON.parse(sessionStorage.getItem('reservationData'));
+
+        // Populate the summary fields
+        document.getElementById('summaryDate').textContent = reservationData.date;
+        document.getElementById('summaryTime').textContent = reservationData.time;
+        document.getElementById('summaryTrainNo').textContent = reservationData.trainNo;
+        document.getElementById('summaryDestination').textContent = reservationData.destination;
+
+        // Confirm Reservation: Sends the reservation data to the server and redirects to my_reservation.html
+        function confirmReservation() {
+            fetch('/reservations', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(reservationData)
+            })
+                .then(response => response.json())
+                .then(data => {
+                    alert(data.message);
+                    window.location.href = 'my_reservation.html'; // Redirect to the user's reservations page
+                })
+                .catch(error => console.error('Error confirming reservation:', error));
+        }
+
+        // Change Reservation: Redirect back to reservation.html with current reservation details
+        function changeReservation() {
+            sessionStorage.setItem('reservationData', JSON.stringify(reservationData));
+            window.location.href = 'reservation.html';
+        }
+
+        // Cancel Reservation: Redirect back to main page (index.html) and clear the stored reservation data
+        function cancelReservation() {
+            sessionStorage.removeItem('reservationData');
+            window.location.href = 'index.html';
+        }
+    </script>
+</body>
+
+</html>

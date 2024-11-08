@@ -1,1 +1,6 @@
-id,year,month,day,time,trainNo,destination
+id,userID,year,month,day,time,trainNo,destination
+
+806bfb56-9caa-4e53-ae74-8e437b4666e4,20jyun,2024,Nov,29,14:03,SRT002,India
+034db19d-844a-4113-905a-776e3cfbeff6,12,2024,Nov,08,14:17,KTX00112,China
+febcf5fb-0f26-4f7c-8eda-8cbacbe7ffba,19jyun,2024,Nov,15,14:26,KTX9532,ASIA
+6d3738fa-0d74-42e4-866d-0772369a6fd2,19jyun,2024,Nov,30,16:26,KTX001,Gumi
